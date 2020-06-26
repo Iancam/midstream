@@ -1,0 +1,27 @@
+Package: midstream
+Title: What the Package Does (One Line, Title Case)
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Ian",
+           family = "Campbell",
+           role = c("aut", "cre"),
+           email = "ian.campbell.92@gmail.com",
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: A simple pipeline from 10x genomics data, through Seurat to ClusterMap. Allows a user to specify a number of parameters.
+License: `use_mit_license()`, `use_gpl3_license()` or friends to
+    pick a license
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.0
+Imports: 
+    dplyr,
+    Seurat (>= 3.1.5),
+    patchwork,
+    parallel,
+    zeallot,
+    magrittr,
+    ClusterMap (>= 0.1.0),
+    stringr
+Remotes:  
+    Iancam/clustermap
