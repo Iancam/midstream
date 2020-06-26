@@ -17,9 +17,9 @@ getFname = function (path) {
     sapply(stringr::str_split(fName, "\\."), head, 1)
 }
 
-makeOutputDir = function(path, output_dir = "seuratOutput"){
-    output_path = paste(output_dir, getFname(path), sep = "/")
-    dir.create(output_path, showWarnings= FALSE)
+makeOutputDir = function(path, experimentDir, output_dir = "seuratOutput" ){
+    output_path = paste(experimentDir, output_dir, getFname(path), sep = "/")
+    dir.create(output_path, recursive = T, showWarnings = F)
     output_path
 }
 
@@ -32,9 +32,9 @@ getInputPaths <- function(input_dir = "input") {
 #' @param output_dir the directory to output to, default seuratOutput
 #' updates the output directory to receive
 #' 
-prepInput <- function(input_dir = "input", output_dir = "seuratOutput") {
+prepInput <- function(experimentDir, input_dir = "input", output_dir = "seuratOutput") {
     input_paths <- getInputPaths(input_dir)
-    output_paths <- lapply(input_paths, makeOutputDir)
+    output_paths <- lapply(input_paths, makeOutputDir, experimentDir)
     list("input_paths"=input_paths,"output_paths"=output_paths)
 }
 
@@ -69,18 +69,13 @@ get10x <- function(dir_path, useFiltered = T) {
 
 mySavePlot <- function(plotFx, fname, dir) {
     print(fname)
-    curwd <- getwd()
-    if (!is.null(dir)) {
-        setwd(dir)
-    }
     plotted <- plotFx()
-    png(paste0(fname, ".png"))
+    png(paste0(dir, "/", fname, ".png"))
         print(plotted)
     dev.off()
-    pdf(paste0(fname, ".pdf"), onefile=FALSE)
+    pdf(paste0(dir, "/", fname, ".pdf"), onefile=FALSE)
         print(plotted)
     dev.off()
-    setwd(curwd)
 }
 
 plotsFor <- function(datasetName, output_dir = "seuratOutput") {
@@ -107,12 +102,13 @@ dumpPrintPlots = function(args) {
 toPCA <- function(
         path,
         cache_dir = "pcaCache",
-        percent.mt = 5,
+        percent.mt.thresh = 5,
         minNFeature=200,
         maxNFeature=2500,
         numTop =10
 ) {
     print(path)
+
     name <- getFname(path)
     c(plots, save_plot) %<-% plotsFor(name)
     # Initialize the Seurat object with the raw (non-normalized data).
@@ -125,13 +121,13 @@ toPCA <- function(
     save_plot(function() VlnPlot(dataset, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3),"mito.vln")
     plot1 <- FeatureScatter(dataset, feature1 = "nCount_RNA", feature2 = "percent.mt")
     plot2 <- FeatureScatter(dataset, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
-    save_plot(function() plot1+plot2, "mito.scatter")
+    save_plot(function() plot1 + plot2, "mito.scatter")
+    print(dataset)
+    if (!is.null(minNFeature)) dataset <- subset(dataset, subset = nFeature_RNA > minNFeature)
+    if (!is.null(maxNFeature)) dataset <- subset(dataset, subset = nFeature_RNA < maxNFeature)
+    if (!is.null(percent.mt))  dataset <- subset(dataset, subset = percent.mt < percent.mt.thresh)
+    save_plot(function() VlnPlot(dataset, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3),"afterThresh.vln")
     print("Normalize")
-    if (!is.null(minNFeature)) {
-        if(!is.null(maxNFeature)) dataset <- subset(dataset, subset = nFeature_RNA > minNFeature & nFeature_RNA < maxNFeature & percent.mt < percent.mt)
-        else dataset <- subset(dataset, subset = nFeature_RNA > minNFeature & percent.mt < percent.mt)   
-    } else if(!is.null(maxNFeature)) dataset <- subset(dataset, subset = nFeature_RNA < maxNFeature & percent.mt < percent.mt)
-    else dataset <- subset(dataset, subset = percent.mt < percent.mt)
     dataset <- NormalizeData(dataset)
     
     print("variable features")
@@ -160,13 +156,18 @@ toPCA <- function(
     list(plots, dataset, name, op_path)
 }
 
-getDims <- function(dir_info) {
-    c(dataset, name, dir_path) %<-% dir_info
-    name = getFname(dir_path)
+getdimsInfo = function(dir_info) getDims(dir_info = dir_info)
+getDimsCached = function(dir) getDims(dir_path = dir)
 
+getDims <- function(dir_info = NULL, dir_path = NULL) {
+    if (!is.null(dir_path)) {
+        name = getFname(dir_path)
+        print(dir_path)
+        dataset <- readRDS(dir_path)
+    } else {
+        c(dataset, name, dir_path) %<-% dir_info
+    }
     c(plots, save_plot) %<-% plotsFor(name)
-    dataset <- readRDS(dir_path)
-
     elbow <- ElbowPlot(dataset)
     print(elbow)
     save_plot(function() elbow, "elbow")()
@@ -181,9 +182,10 @@ toCluster <- function(
     clusterResolution= 0.5,
     reductionTypes= c("umap"),
     min.pct = 0.25,
-    logfc.threshold = 0.25) {
-    
+    logfc.threshold = 0.25
+) {
     print("toCluster")
+    print(reductionTypes)
     c(dataset, name, dims) %<-% info
     c(plots, save_plot) %<-% plotsFor(name)
     markerFN <- paste(output_dir, paste0(name, ".markers.csv"), sep = "/")
@@ -191,16 +193,21 @@ toCluster <- function(
     dataset <- FindNeighbors(dataset, dims = 1:dims)
     dataset <- FindClusters(dataset, resolution = clusterResolution)
     
-    reductionMapping = c("umap"=RunUMAP, "tsne"=RunTSNE)
-    lapply(reductionTypes, function(name) datset <- reductionMapping[name](dataset, dims = 1:dims))
-    save_plot(function() DimPlot(dataset, reduction = reductionType), reductionType)
-    # print(DimPlot(dataset, reduction = "umap"))
+    reductionMapping = c("umap" = RunUMAP, "tsne" = RunTSNE)
+    if("tsne" %in% reductionTypes) {
+        dataset <- reductionMapping[["tsne"]](dataset, dims = 1:dims)
+        save_plot(function() DimPlot(dataset, reduction = "tsne"), "tsne") 
+    }
+    if("umap" %in% reductionTypes) {
+        dataset <- reductionMapping[["umap"]](dataset, dims = 1:dims)
+        save_plot(function() DimPlot(dataset, reduction = "umap"), "umap") 
+    }
     print("markers")
     dataset.markers <- FindAllMarkers(
         dataset,
         only.pos = TRUE,
-        min.pct =min.pct,
-        logfc.threshold =logfc.threshold
+        min.pct = min.pct,
+        logfc.threshold = logfc.threshold
     )
     print(markerFN)
     list(plots, dataset.markers, markerFN, dataset, rdsFN, name)
@@ -220,7 +227,7 @@ tenX2Combined <- function(
     print("toCombined")
     named_data <- lapply(dirs, function(dir_path) {
         dir_name <- sapply(stringr::str_split(dir_path, "/"), tail, 1)
-        data <- getnumTopx(dir_path)
+        data <- get10x(dir_path)
         id <- gsub(comb_delim, sub_delim, dir_name)
         colnames(data) <- paste0(id, "_", colnames(data))
         data
@@ -275,6 +282,7 @@ tenX2Seurat = function (
     input_dir = "input",
     useFiltered = TRUE,
     combine = TRUE,
+    cache_dir = "pcaCache",
 
     percent.mt = 5,
     minNFeature=200,
@@ -291,15 +299,14 @@ tenX2Seurat = function (
     if(combine) {
         tenX2Combined(targets= targets)
     }
-    vc <- prepInput()
+    vc <- prepInput(experimentPath)
     paths <- vc$input_paths
-    if(!is.null(targets)){
-        paths <- lapply(targets, function(t) paste(input_dir,t, sep="/") )
+    if (!is.null(targets)) {
+        paths <- lapply(targets, function(t) paste(input_dir, t, sep = "/"))
     }
-
-    mclapply(paths, toPCA, mc.cores = num_cores) %>%
-        lapply(dumpPrintPlots) %>%
-        lapply(getDims) %>%
+    if (dir.exists(paste0("./", cache_dir))) {
+        list.files(cache_dir, full.names = T) %>%
+        lapply(getDimsCached) %>%
         mclapply(toCluster,
             output = output_dir, 
             clusterResolution = clusterResolution ,
@@ -309,9 +316,24 @@ tenX2Seurat = function (
             mc.cores = num_cores) %>%
         lapply(dumpPrintPlots) %>%
         lapply(saveDataset)
+    }
+    else
+    mclapply(paths, toPCA,
+    percent.mt.thresh = percent.mt,
+    minNFeature = minNFeature,
+    maxNFeature = maxNFeature,
+    numTop = numTop,
+    mc.cores = num_cores
+    ) %>%
+        lapply(dumpPrintPlots) %>%
+        lapply(getDimsInfo) %>%
+        mclapply(toCluster,
+            output = output_dir,
+            clusterResolution = clusterResolution,
+            reductionTypes = reductionTypes,
+            min.pct = min.pct,
+            logfc.threshold = logfc.threshold,
+            mc.cores = num_cores) %>%
+        lapply(dumpPrintPlots) %>%
+        lapply(saveDataset)
 }
-
-
-# , targets= c("comb.rds"), combine=F)
-tenX2Seurat(experimentPath = "~/experiments/IM", reductionTypes = c("umap", "tsne"), maxNFeature=NULL)
-seurat2ClusterMap()
