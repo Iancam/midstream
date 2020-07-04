@@ -1,8 +1,8 @@
-#' @import parallel
 #' @import magrittr
 #' @import Seurat
+#' @import future.apply
 num_cores <- parallel::detectCores()
-#'
+
 #' @param experimentPath path to a dir containing input_dir (defaults to input), will contain output directories
 #' @param output_dir = "seuratOutput":
 #' @param input_dir = "input": directory name in experimentPath containing 10x output, should look like "outs/filtered_gene_bc_matrices/mm10"
@@ -18,6 +18,7 @@ num_cores <- parallel::detectCores()
 #' @param reductionTypes= c("umap"): currently supports umap, and tsne
 #' @param min.pct = 0.25: 
 #' @param logfc.threshold = 0.25
+#' #' @export 
 tenX2Seurat = function (
     experimentPath,
     targets = NULL,
@@ -97,14 +98,17 @@ tenX2Seurat = function (
 
     from_input =
     future_lapply(input_paths, loadFile) %>%
-    future_lapply(toPCA,
-        cache_dir = cache_dir,
+    future_lapply(QC, 
         plotSaver = plotSaver,
         percent.mt.thresh = percent.mt,
         minNFeature = minNFeature,
-        maxNFeature = maxNFeature,
-        numTop = numTop,
-        nfeatures = nfeatures
+        maxNFeature = maxNFeature
+    ) %>%
+    future_lapply(toPCA,
+        cache_dir = cache_dir,
+        plotSaver = plotSaver,
+        numTop =10,
+        nfeatures = 2000
         ) %>%
         lapply(dumpPrintPlots) %>%
         lapply(function(info) getDims(

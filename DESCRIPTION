@@ -8,7 +8,7 @@ Authors@R:
            email = "ian.campbell.92@gmail.com",
            comment = c(ORCID = "YOUR-ORCID-ID"))
 Description: A simple pipeline from 10x genomics data, through Seurat to ClusterMap. Allows a user to specify a number of parameters.
-License: use_mit_license()
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
@@ -23,7 +23,7 @@ Imports:
     future.apply,
     purrr,
     stringr
-    importFrom("stats", "setNames")
-    importFrom("utils", "head", "tail", "write.csv")
-Remotes:  
+Remotes: 
     Iancam/clustermap
+Suggests: 
+    testthat

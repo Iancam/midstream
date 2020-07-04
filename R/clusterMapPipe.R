@@ -1,6 +1,8 @@
 
 #' @import stringr
 #' @import Seurat
+#' @import ClusterMap
+#' @importFrom stats setNames
 #' @export
 tenX2Combined <- function(
     input_dir = "input",

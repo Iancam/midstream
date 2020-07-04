@@ -1,9 +1,14 @@
 #' @import stringr
 #' @import dplyr
 #' @import Seurat
+#' @importFrom utils head tail write.csv
 getFname = function (path) {
     fName <- sapply(stringr::str_split(path, "/"), tail, 1)
     sapply(stringr::str_split(fName, "\\."), head, 1)
+}
+
+getExperimentName = function(inputFile) {
+    basename(normalizePath(paste0(inputFile, "/../../")))
 }
 
 makeOutputDir = function(path, experimentDir, output_dir = "seuratOutput" ){
@@ -12,9 +17,10 @@ makeOutputDir = function(path, experimentDir, output_dir = "seuratOutput" ){
     output_path
 }
 
-getInputPaths <- function(input_dir = "input") {
-    rdss = list.files(input_dir, full.names = TRUE) %>% Filter(function (x) endsWith(x, ".rds"), .)
-    c(list.dirs(input_dir, full.names = TRUE, recursive = FALSE), rdss)
+getInputPaths <- function(experimentDir, input_dir = "input") {
+    dir = paste(experimentDir,input_dir, sep="/")
+    rdss = list.files(dir, full.names = TRUE) %>% Filter(function (x) endsWith(x, ".rds"), .)
+    c(list.dirs(dir, full.names = TRUE, recursive = FALSE), rdss)
 }
 
 #' @param input_dir the directory of the experiment's 10x output
@@ -22,7 +28,7 @@ getInputPaths <- function(input_dir = "input") {
 #' updates the output directory to receive
 #' 
 prepInput <- function(experimentDir, input_dir = "input", output_dir = "seuratOutput") {
-    input_paths <- getInputPaths(input_dir)
+    input_paths <- getInputPaths(experimentDir)
     output_paths <- lapply(input_paths, makeOutputDir, experimentDir)
     list("input_paths"=input_paths,"output_paths"=output_paths)
 }
@@ -30,25 +36,40 @@ prepInput <- function(experimentDir, input_dir = "input", output_dir = "seuratOu
 
 
 saveDataset <- function(clustered) {
-    c(dataset.markers, markerFN, dataset, rdsFN, name) %<-% clustered
+    dataset.markers = clustered[[1]]
+    markerFN = clustered[[2]]
+    dataset = clustered[[3]]
+    rdsFN = clustered[[4]]
 
     write.csv(dataset.markers, markerFN)
     saveRDS(dataset, file = rdsFN)
+    clustered
 }
 
 get10x <- function(dir_path, useFiltered = T) {
-    if (useFiltered)
-        geneMatrices <- "filtered_gene_bc_matrices"
-    else
-        geneMatrices <- "raw_gene_bc_matrices"
+  if (useFiltered)
+      geneName <- "filtered_gene_bc_matrices"
+  else
+      geneName <- "raw_gene_bc_matrices"
 
-    Read10X(
-        data.dir = paste(
-            dir_path,
-            "outs",
-            geneMatrices,
-            "mm10",
-            sep = "/"
-            )
-        )
+  Read10X(
+      data.dir = paste(
+          dir_path,
+          "outs",
+          geneName,
+          "mm10",
+          sep = "/"
+          )
+      )
+}
+
+loadFile = function(path) {
+  name <- getFname(path)
+  experimentName = getExperimentName(path)
+  if(path %>% endsWith("rds")) dataset <- readRDS(path)
+  else dataset <- CreateSeuratObject(get10x(path))
+  dataset$experimentName = experimentName
+  dataset$datasetName = name
+  dataset$orig.ident <- paste(experimentName, name, sep = "/")
+  dataset
 }

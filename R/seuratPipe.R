@@ -1,4 +1,7 @@
 #' @import Seurat
+#' @import dplyr
+#' @importFrom utils head tail
+#' 
 QC = function(
     dataset,
     percent.mt.thresh = 5,
@@ -62,9 +65,6 @@ toPCA <- function(
         dataset,
         cache_dir = "pcaCache",
         plotSaver = NULL,
-        percent.mt.thresh = 5,
-        minNFeature=200,
-        maxNFeature=2500,
         numTop =10,
         nfeatures = 2000,
         plotHeatMap = F
