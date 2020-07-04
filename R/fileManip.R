@@ -1,4 +1,6 @@
 #' @import stringr
+#' @import dplyr
+#' @import Seurat
 getFname = function (path) {
     fName <- sapply(stringr::str_split(path, "/"), tail, 1)
     sapply(stringr::str_split(fName, "\\."), head, 1)

@@ -1,7 +1,6 @@
-library(Seurat)
-library(ClusterMap)
+
 #' @import stringr
-#' 
+#' @import Seurat
 #' @export
 tenX2Combined <- function(
     input_dir = "input",
@@ -27,22 +26,24 @@ tenX2Combined <- function(
     saveRDS(data, file = paste0(input_dir, "/comb.rds"))
 }
 #' @export
+
 seurat2ClusterMap <- function(
+        experimentPath,
         seurat_dir = "seuratOutput",
         output_dir = "clusterMapOutput",
         output_name = NULL,
         comb_delim = "_",
         sub_delim="-") 
     {
+        seurat_dir = paste(experimentPath, seurat_dir, sep = "/")
+        output_dir = paste(experimentPath, output_dir, sep = "/")
         dir.create(output_dir,showWarnings= FALSE)
-        curr_dir = getwd()
-        setwd(seurat_dir)
-        files = list.files(full.names = TRUE)
+        files = list.files(seurat_dir, full.names = TRUE)
         markers <- Filter(function(x) endsWith(x, ".markers.csv") && !startsWith(basename(x), "comb"), files)
         comb <- Filter(function(x) endsWith(x, ".rds") && startsWith(basename(x), "comb"), files)
         rdsFiles <- Filter(function(x) endsWith(x, ".rds") && !startsWith(basename(x), "comb"), files)
         obj.names = lapply(rdsFiles, function(path) gsub(comb_delim, sub_delim, getFname(path)))
-        single_obj_list <- lapply(rdsFiles,readRDS)
+        single_obj_list <- lapply(rdsFiles, readRDS)
         single_obj_list <- setNames(single_obj_list, obj.names)
         markers = setNames(markers, obj.names)
         comb = readRDS(comb)  
@@ -50,15 +51,14 @@ seurat2ClusterMap <- function(
         results <- cluster_map(
             markers,
             edge_cutoff = 0.1,
-            output = paste(curr_dir, output_dir, basename(curr_dir), sep="/"),
+            output = paste(output_dir, basename(experimentPath), sep="/"),
             single_obj_list = single_obj_list,
             comb_obj = comb,
             comb_delim = comb_delim
         )
-        dir.create(paste(curr_dir, output_dir,"figures",sep="/"))
+        dir.create(paste(output_dir, "figures", sep = "/"))
         figures <- Filter(function(x) endsWith(x, "png") || endsWith(x, "pdf"), list.files())
         print(figures)
         print(output_dir)
-        lapply(figures, function (file) file.rename(file, paste(curr_dir, output_dir,"figures", file, sep="/")))
-        setwd(curr_dir)
+        lapply(figures, function (file) file.rename(file, paste(output_dir, "figures", file, sep="/")))
 }
