@@ -22,7 +22,8 @@ Imports:
     ggplot2,
     future.apply,
     purrr,
-    stringr
+    stringr,
+    drake
 Remotes: 
     Iancam/clustermap
 Suggests: 
