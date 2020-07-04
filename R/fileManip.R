@@ -36,9 +36,9 @@ prepInput <- function(experimentDir, input_dir = "input", output_dir = "seuratOu
 
 
 saveDataset <- function(clustered) {
-    dataset.markers = clustered[[1]]
-    markerFN = clustered[[2]]
-    dataset = clustered[[3]]
+    dataset = clustered[[1]]
+    dataset.markers = clustered[[2]]
+    markerFN = clustered[[3]]
     rdsFN = clustered[[4]]
 
     write.csv(dataset.markers, markerFN)

@@ -16,6 +16,7 @@ QC = function(
     plots = plotStuff[[1]]
     save_plot = plotStuff[[2]]
     analysisFile = plotStuff[[3]]
+    print(analysisFile)
     # Initialize the Seurat object with the raw (non-normalized data).
     
     print("percent.mt")
@@ -58,17 +59,17 @@ QC = function(
     }
     sink()
     save_plot(function() VlnPlot(dataset, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3),"afterThresh.vln")
-    dataset
+    list(plots, dataset)
 }
 
 toPCA <- function(
-        dataset,
-        cache_dir = "pcaCache",
+        input,
         plotSaver = NULL,
         numTop =10,
         nfeatures = 2000,
         plotHeatMap = F
 ) {
+    dataset = input[[1]]
     name <- getNameFromSeurat(dataset)
     plotStuff = plotSaver(name)
     plots = plotStuff[[1]]
@@ -104,40 +105,40 @@ toPCA <- function(
     if(plotHeatMap) save_plot(function() DimHeatmap(dataset, dims = 1:15, cells = 500, balanced = TRUE),
      "dim.heatmap")
 
-    dir.create(cache_dir, showWarnings= FALSE)
-    op_path <- paste(cache_dir, paste0(name, ".rds"), sep = "/")
-    saveRDS(dataset, file = op_path)
-    list(plots, dataset, name, op_path)
+    list(plots, dataset)
 }
 
-getDims <- function(dir_info = NULL, dir_path = NULL, plotSaver = NULL, dims=20, getManually= F) {
+getDims <- function(
+    input = NULL,
+    dir_path = NULL,
+    plotSaver = NULL,
+    dims=20,
+    getManually= F
+) {
     print("getting dims")
-    if (!is.null(dir_path)) {
-        name = getFname(dir_path)
-        print(dir_path)
-        dataset <- readRDS(dir_path)
-    } else {
-        dataset = dir_info[[1]]
-        name = dir_info[[2]]
-        dir_path = dir_info[[3]]
-    }
+    dataset = input[[1]]
+    name = getNameFromSeurat(dataset)
+
     plotStuff = plotSaver(name)
     plots = plotStuff[[1]]
-    save_plot =plotStuff[[2]]
+    save_plot = plotStuff[[2]]
     analysisFile = plotStuff[[3]]
+
     elbow <- ElbowPlot(dataset)
-    # print(elbow)
     save_plot(function() elbow, "elbow")
     sink(analysisFile, append = T)
-    if(getManually) dims <- as.numeric(readline(prompt = "what shall be your dimensions? "))
+    if(getManually) {
+        print(elbow)
+        dims <- as.numeric(readline(prompt = "what shall be your dimensions? "))
+    }
     cat("dims: ")
     print(dims)
     sink()
-    c(dataset, name, dims)
+    c(plots, dataset, dims)
 }
 
 toCluster <- function(
-    info,
+    input,
     plotSaver,
     output_dir = "seuratOutput",
     clusterResolution= 0.5,
@@ -145,9 +146,10 @@ toCluster <- function(
     min.pct = 0.25,
     logfc.threshold = 0.25
 ) {
-    dataset = info[[1]]
-    name = info[[2]]
-    dims = info[[3]]
+    dataset = input[[1]]
+    dims = input[[2]]
+    name = getNameFromSeurat(dataset)
+    
     plotStuff = plotSaver(name)
     plots = plotStuff[[1]]
     save_plot = plotStuff[[2]]
@@ -170,7 +172,6 @@ toCluster <- function(
         dataset <<- reductionMapping[[type]](dataset, dims = 1:dims)
         save_plot(function() DimPlot(dataset, reduction = type, label = T), type)
     })
-    print(dataset)
     
     print("markers")
     dataset.markers <- FindAllMarkers(
@@ -180,7 +181,7 @@ toCluster <- function(
     )
     print(markerFN)
     
-    list(plots, dataset.markers, markerFN, dataset, rdsFN, name)
+    list(plots, dataset, dataset.markers, markerFN, rdsFN, name)
 }
 
 tenX2Combined <- function(
@@ -195,8 +196,6 @@ tenX2Combined <- function(
         return()
     }
     dirs = list.dirs(input_dir, recursive = FALSE)
-    print(input_dir)
-    print(dirs)
     print("toCombined")
     named_data <- lapply(dirs, function(dir_path) {
         dir_name <- sapply(stringr::str_split(dir_path, "/"), tail, 1)
