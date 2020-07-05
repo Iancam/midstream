@@ -19,7 +19,7 @@ num_cores <- parallel::detectCores()
 #' @param reductionTypes= c("umap"): currently supports umap, and tsne
 #' @param min.pct = 0.25: 
 #' @param logfc.threshold = 0.25
-#' #' @export 
+#' @export
 tenX2Seurat = function (
     experimentPath,
     targets = NULL,
