@@ -53,13 +53,15 @@ tenX2Seurat = function (
         tenX2Combined(input_dir = input_dir)
     }
     vc <- prepInput(experimentPath)
-    
     plotSaver = Logger(output_dir)
     if (suppressIO) dumpPrintPlots = function(args) args[2:length(args)]
 
     if (!is.null(targets)) {
         vc$input_paths <- Filter(function(x) getFname(x) %in% targets, vc$input_paths)
     }
+
+    num_cores <- future::availableCores()
+    future::plan(future::multiprocess, workers = num_cores)
 
     dumpFixer = function(fn) {
         function(...) fn(...) %>% dumpPrintPlots()
@@ -111,24 +113,4 @@ tenX2Seurat = function (
 
     vis_drake_graph(pipeLine)
     make(pipeLine)
-    # (from_input = lapply(vc$input_paths, function(fileName){
-    #     loadFile(fileName) %>%
-    #     QC(
-    #     )%>% dumpPrintPlots %>%
-    #     toPCA( %>% dumpPrintPlots %>%
-    #     getDims(
-            
-    #     ) %>% dumpPrintPlots %>%
-    #      %>% dumpPrintPlots %>%
-        
-    # }))
-    
-
-    # datasets = from_input
-    # lapply(datasets, function(clustered) c(
-    #      "dataset"= clustered[[1]],
-    #      "filename"= clustered[[4]],
-    #      "output"= output_dir     
-    #     )
-    # )
 }

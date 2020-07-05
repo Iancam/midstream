@@ -23,9 +23,6 @@ mySavePlot <- function(plotFx, fname, dir) {
     plotted <- plotFx()
     p_ng = paste0(path, ".png")
     p_df = paste0(path, ".pdf")
-    file_out(p_ng)
-    file_out(p_df)
-
     try(ggsave(p_ng, plot = plotted))
     print(paste0(path, ".pdf"))
     try(ggsave(p_df, plot = plotted))
