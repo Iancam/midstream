@@ -40,8 +40,13 @@ saveDataset <- function(clustered) {
     dataset.markers = clustered[[2]]
     markerFN = clustered[[3]]
     rdsFN = clustered[[4]]
-
     write.csv(dataset.markers, markerFN)
+    dir = paste(dirname(rdsFN), "clusters", getFname(rdsFN), sep = "/")
+    dir.create(dir)
+    clusters = unique(dataset.markers$clust)
+    lapply(clusters, function(cluster) {
+        subcluster = subset(dataset.markers, cluster == cluster)
+        write.csv(subcluster, paste0(dir, "/", cluster, ".csv"))})
     saveRDS(dataset, file = rdsFN)
     clustered
 }

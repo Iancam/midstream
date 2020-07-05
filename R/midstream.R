@@ -107,7 +107,8 @@ tenX2Seurat = function (
                         min.pct = min.pct,
                         logfc.threshold = logfc.threshold
                     ), transform = map(withDims)),
-            fini = target(saveDataset(clustered), transform = map(clustered))
+            fin = target(saveDataset(clustered), transform = map(clustered))
+            
         )
     
 
