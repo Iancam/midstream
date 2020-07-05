@@ -61,39 +61,74 @@ tenX2Seurat = function (
         vc$input_paths <- Filter(function(x) getFname(x) %in% targets, vc$input_paths)
     }
 
-    from_input = lapply(vc$input_paths, function(fileName){
-        loadFile(fileName) %>%
-        QC(plotSaver = plotSaver,
-            percent.mt.thresh = percent.mt,
-            minNFeature = minNFeature,
-            maxNFeature = maxNFeature
-        )%>% dumpPrintPlots %>%
-        toPCA(plotSaver = plotSaver,
-            numTop = 10,
-            nfeatures = 2000
-        ) %>% dumpPrintPlots %>%
-        getDims(
-            plotSaver = plotSaver,
-            getManually = getDimsManually,
-            dims = defaultDims
-        ) %>% dumpPrintPlots %>%
-        toCluster(
-            plotSaver = plotSaver,
-            output_dir = output_dir,
-            clusterResolution = clusterResolution,
-            reductionTypes = reductionTypes,
-            min.pct = min.pct,
-            logfc.threshold = logfc.threshold
-        ) %>% dumpPrintPlots %>%
-        saveDataset
-    })
+    dumpFixer = function(fn) {
+        function(...) fn(...) %>% dumpPrintPlots()
+    }
+
+    fixedFuncs = lapply(list(
+        QC,
+        toPCA,
+        getDims,
+        toCluster
+     ), dumpFixer)
+
+    QC = fixedFuncs[[1]]
+    toPCA = fixedFuncs[[2]]
+    getDims = fixedFuncs[[3]]
+    toCluster = fixedFuncs[[4]]
+
+    pipeLine = drake_plan(
+            input = target(
+                loadFile(file_in(assayPath)),
+                transform = map(assayPath = !!vc$input_paths)
+            ),
+            qc = target(QC(input, plotSaver = plotSaver,
+                    percent.mt.thresh = percent.mt,
+                    minNFeature = minNFeature,
+                    maxNFeature = maxNFeature
+                    ), transform = map(input)),
+            pca = target(toPCA(qc, 
+                        plotSaver = plotSaver,
+                        numTop = numTop,
+                        nfeatures = nfeatures
+                        ), transform = map(qc)),
+            withDims = target(getDims(pca, 
+                        plotSaver = plotSaver,
+                        getManually = getDimsManually,
+                        dims = defaultDims
+                        ), transform = map(pca)),
+            clustered = target(toCluster(withDims, 
+                        plotSaver = plotSaver,
+                        output_dir = output_dir,
+                        clusterResolution = clusterResolution,
+                        reductionTypes = reductionTypes,
+                        min.pct = min.pct,
+                        logfc.threshold = logfc.threshold
+                    ), transform = map(withDims)),
+            fini = target(saveDataset(clustered), transform = map(clustered))
+        )
     
 
-    datasets = from_input
-    lapply(datasets, function(clustered) c(
-         "dataset"= clustered[[1]],
-         "filename"= clustered[[4]],
-         "output"= output_dir     
-        )
-    )
+    vis_drake_graph(pipeLine)
+    make(pipeLine)
+    # (from_input = lapply(vc$input_paths, function(fileName){
+    #     loadFile(fileName) %>%
+    #     QC(
+    #     )%>% dumpPrintPlots %>%
+    #     toPCA( %>% dumpPrintPlots %>%
+    #     getDims(
+            
+    #     ) %>% dumpPrintPlots %>%
+    #      %>% dumpPrintPlots %>%
+        
+    # }))
+    
+
+    # datasets = from_input
+    # lapply(datasets, function(clustered) c(
+    #      "dataset"= clustered[[1]],
+    #      "filename"= clustered[[4]],
+    #      "output"= output_dir     
+    #     )
+    # )
 }

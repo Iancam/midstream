@@ -1,5 +1,6 @@
 ##### PLOTTING 
 #' @import Seurat
+#' @import drake
 reportChanges = function(oldDataset, fx, functionName, args){
     newDataset = fx()
     datasetReports = lapply(list(oldDataset, newDataset), function(dataset) {
@@ -20,10 +21,14 @@ reportChanges = function(oldDataset, fx, functionName, args){
 mySavePlot <- function(plotFx, fname, dir) {
     path = paste0(dir, "/", fname)
     plotted <- plotFx()
-    print(paste0(path, ".png"))
-    try(ggsave(paste0(path, ".png"), plot = plotted))
+    p_ng = paste0(path, ".png")
+    p_df = paste0(path, ".pdf")
+    file_out(p_ng)
+    file_out(p_df)
+
+    try(ggsave(p_ng, plot = plotted))
     print(paste0(path, ".pdf"))
-    try(ggsave(paste0(path, ".pdf"), plot = plotted))
+    try(ggsave(p_df, plot = plotted))
 }
 
 LoggerFor <- function(datasetName, output_dir = "seuratOutput") {
