@@ -3,12 +3,12 @@ test_that("Pipe Runs Without Errors", {
 })
 
 test_that("QCFiles exist", {
-  expect_equal(file.exists("data/im/seuratOutput/d1/d1.afterThresh.vln.pdf"), T)
+  expect_equal(file.exists("data/im/seuratOutput/d1/afterThresh.vln.pdf"), T)
 })
 
 
 test_that("PCAFiles exist", {
-  expect_equal(file.exists("data/im/seuratOutput/d1/d1.dim.loadings.pdf"), T)
+  expect_equal(file.exists("data/im/seuratOutput/d1/dim.loadings.pdf"), T)
 })
 
 # file.remove("./data/im/input/comb.rds")

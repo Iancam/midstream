@@ -20,10 +20,10 @@ Imports:
     magrittr,
     ClusterMap (>= 0.1.0),
     ggplot2,
-    future.apply,
     purrr,
     stringr,
-    drake
+    R.devices,
+    memoise
 Remotes: 
     Iancam/clustermap
 Suggests: 

@@ -1,7 +1,6 @@
 ##### PLOTTING 
 #' @import Seurat
-#' @import drake
-reportChanges = function(oldDataset, fx, functionName, args){
+reportChanges = function(oldDataset, fx, functionName, args, report){
     newDataset = fx()
     datasetReports = lapply(list(oldDataset, newDataset), function(dataset) {
         c("features" = nrow(dataset),
@@ -11,21 +10,33 @@ reportChanges = function(oldDataset, fx, functionName, args){
     after = datasetReports[[2]]
     before = datasetReports[[1]]
     diff = after - before
-    cat("\nafter applying "); cat(functionName); cat(" with args: (\n"); print(args); cat(")\n")
-    print(cbind(before, after))
-    print("difference: ")
-    print(diff)
+
+    changes = list()
+    changes$comparison = cbind(before, after)
+    changes$difference = diff
+    report(functionName, changes)
     newDataset
 }
 
-mySavePlot <- function(plotFx, fname, dir) {
+g = function(plot){
+    plot
+}
+
+reportFactory = function() {
+    report = list()
+    function(key=NULL, value=NULL) {
+        if (!is.null(key) && !is.null(value)) report[[key]] <<- value
+        return(report)
+    }
+}
+
+mySavePlot <- function(plotted, fname, dir) {
     path = paste0(dir, "/", fname)
-    plotted <- plotFx()
     p_ng = paste0(path, ".png")
     p_df = paste0(path, ".pdf")
-    try(ggsave(p_ng, plot = plotted))
+    try(R.devices::suppressGraphics(ggsave(p_ng, plot = plotted)))
     print(paste0(path, ".pdf"))
-    try(ggsave(p_df, plot = plotted))
+    try(R.devices::suppressGraphics(ggsave(p_df, plot = plotted)))
 }
 
 LoggerFor <- function(datasetName, output_dir = "seuratOutput") {
@@ -43,6 +54,7 @@ LoggerFor <- function(datasetName, output_dir = "seuratOutput") {
     }
     list(function() plots, save, paste0(dir, "/run.txt"))
 }
+
 
 Logger = function(output_dir) {
     function(datasetName) LoggerFor(datasetName, output_dir)

@@ -1,2 +1,3 @@
 ^LICENSE\.md$
 tests/testthat/data/
+tests/testthat/.cache/

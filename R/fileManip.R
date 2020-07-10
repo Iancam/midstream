@@ -33,22 +33,11 @@ prepInput <- function(experimentDir, input_dir = "input", output_dir = "seuratOu
     list("input_paths"=input_paths,"output_paths"=output_paths)
 }
 
-
-
-saveDataset <- function(clustered) {
-    dataset = clustered[[1]]
-    dataset.markers = clustered[[2]]
-    markerFN = clustered[[3]]
-    rdsFN = clustered[[4]]
-    write.csv(dataset.markers, markerFN)
-    dir = paste(dirname(rdsFN), "clusters", getFname(rdsFN), sep = "/")
-    dir.create(dir, recursive = T)
-    clusters = unique(dataset.markers$clust)
-    lapply(clusters, function(cluster) {
-        subcluster = subset(dataset.markers, cluster == cluster)
-        print(paste0(dir, "/", cluster, ".csv"))
-        write.csv(subcluster, paste0(dir, "/", cluster, ".csv"))})
-    saveRDS(dataset, file = rdsFN)
+saveDataset <- function(clustered, path) {
+    dataset = clustered$dataset
+    dataset.markers = clustered$dataset.markers
+    write.csv(dataset.markers, paste0(path, ".markers.csv"))
+    saveRDS(dataset, file = paste0(path, ".rds"))
     clustered
 }
 

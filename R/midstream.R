@@ -1,10 +1,7 @@
 #' @import magrittr
 #' @import Seurat
-#' @import future.apply
-#' @import drake
-
-num_cores <- parallel::detectCores()
-
+#' @import R.devices
+#' @import memoise
 #' @param experimentPath path to a dir containing input_dir (defaults to input), will contain output directories
 #' @param output_dir = "seuratOutput":
 #' @param input_dir = "input": directory name in experimentPath containing 10x output, should look like "outs/filtered_gene_bc_matrices/mm10"
@@ -39,7 +36,8 @@ tenX2Seurat = function (
     clusterResolution= 0.5,
     reductionTypes= c("umap"),
     min.pct = 0.25,
-    logfc.threshold = 0.25
+    logfc.threshold = 0.25,
+    cluster.pval = 0.05
 ) {
     sink()
     input_dir  <- paste(experimentPath, input_dir, sep = "/")
@@ -60,58 +58,55 @@ tenX2Seurat = function (
         vc$input_paths <- Filter(function(x) getFname(x) %in% targets, vc$input_paths)
     }
 
-    num_cores <- future::availableCores()
-    future::plan(future::multiprocess, workers = num_cores)
-
     dumpFixer = function(fn) {
         function(...) fn(...) %>% dumpPrintPlots()
     }
+    fc <- memoise::cache_filesystem(paste0(experimentPath, "/.cache"))
+    fxs = lapply(list(QC,toPCA,getDims,toCluster,saveDataset,splitClusters),
+    memoise, cache = fc)
 
-    fixedFuncs = lapply(list(
-        QC,
-        toPCA,
-        getDims,
-        toCluster
-     ), dumpFixer)
-
-    QC = fixedFuncs[[1]]
-    toPCA = fixedFuncs[[2]]
-    getDims = fixedFuncs[[3]]
-    toCluster = fixedFuncs[[4]]
-
-    pipeLine = drake_plan(
-            input = target(
-                loadFile(file_in(assayPath)),
-                transform = map(assayPath = !!vc$input_paths)
-            ),
-            qc = target(QC(input, plotSaver = plotSaver,
-                    percent.mt.thresh = percent.mt,
-                    minNFeature = minNFeature,
-                    maxNFeature = maxNFeature
-                    ), transform = map(input)),
-            pca = target(toPCA(qc, 
-                        plotSaver = plotSaver,
-                        numTop = numTop,
-                        nfeatures = nfeatures
-                        ), transform = map(qc)),
-            withDims = target(getDims(pca, 
-                        plotSaver = plotSaver,
-                        getManually = getDimsManually,
-                        dims = defaultDims
-                        ), transform = map(pca)),
-            clustered = target(toCluster(withDims, 
-                        plotSaver = plotSaver,
-                        output_dir = output_dir,
-                        clusterResolution = clusterResolution,
-                        reductionTypes = reductionTypes,
-                        min.pct = min.pct,
-                        logfc.threshold = logfc.threshold
-                    ), transform = map(withDims)),
-            fin = target(saveDataset(clustered), transform = map(clustered))
-            
-        )
+    QC = fxs[[1]]
+    toPCA = fxs[[2]]
+    getDims = fxs[[3]]
+    toCluster = fxs[[4]]
+    saveDataset = fxs[[5]]
+    splitClusters = fxs[[6]]
     
+    lapply(vc$input_paths[1], function(assayPath) {
+        print(assayPath)
+        input = list("dataset" = loadFile(assayPath), "report" = reportFactory())
+        name = getNameFromSeurat(input$dataset)
+        dataFilePath <- paste(output_dir, name, sep = "/")
+        qc = QC(input,
+                percent.mt.thresh = percent.mt,
+                minNFeature = minNFeature,
+                maxNFeature = maxNFeature)
+        pca = toPCA(qc, 
+                    numTop = numTop,
+                    nfeatures = nfeatures)
+        withDims = getDims(pca, 
+                    getManually = getDimsManually,
+                    dims = defaultDims)
+        clustered = toCluster(withDims, 
+                    output_dir = output_dir,
+                    clusterResolution = clusterResolution,
+                    reductionTypes = reductionTypes,
+                    min.pct = min.pct,
+                    logfc.threshold = logfc.threshold)
+        fin = saveDataset(clustered, dataFilePath)
+        fin2 = splitClusters(clustered$dataset.markers,
+                            output_dir,
+                            name,
+                            inp_p_val = cluster.pval)
+        saveRDS(clustered$report, paste0(dataFilePath, ".report.rds"))
+        plotNames = Filter(function(x) {
+             str_starts(string = x, pattern = "plot::")
+             }, names(clustered$report()))
 
-    vis_drake_graph(pipeLine)
-    make(pipeLine)
+        lapply(plotNames, function(pn) {
+            mySavePlot(clustered$report()[[pn]], str_split(pn, "::")[[1]][2], paste(output_dir, name, sep = "/"))
+        })
+        
+    })
+
 }
