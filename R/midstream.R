@@ -72,7 +72,7 @@ tenX2Seurat = function (
     saveDataset = fxs[[5]]
     splitClusters = fxs[[6]]
     
-    lapply(vc$input_paths[1], function(assayPath) {
+    lapply(vc$input_paths, function(assayPath) {
         print(assayPath)
         input = list("dataset" = loadFile(assayPath), "report" = reportFactory())
         name = getNameFromSeurat(input$dataset)
@@ -99,14 +99,19 @@ tenX2Seurat = function (
                             name,
                             inp_p_val = cluster.pval)
         saveRDS(clustered$report, paste0(dataFilePath, ".report.rds"))
+        
         plotNames = Filter(function(x) {
              str_starts(string = x, pattern = "plot::")
              }, names(clustered$report()))
-
         lapply(plotNames, function(pn) {
             mySavePlot(clustered$report()[[pn]], str_split(pn, "::")[[1]][2], paste(output_dir, name, sep = "/"))
         })
-        
+        rmarkdown::render(
+            system.file("report.rmd", package = 'midstream'),
+            output_dir = dataFilePath,
+            output_file = paste0(name, ".report.html"),
+            params = list("report" = clustered$report())
+        )
     })
 
 }
