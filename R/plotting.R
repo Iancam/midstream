@@ -12,6 +12,7 @@ reportChanges = function(oldDataset, fx, functionName, args, report){
     diff = after - before
 
     changes = list()
+    changes$args = args
     changes$comparison = cbind(before, after)
     changes$difference = diff
     report(functionName, changes)

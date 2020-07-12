@@ -61,16 +61,6 @@ tenX2Seurat = function (
     dumpFixer = function(fn) {
         function(...) fn(...) %>% dumpPrintPlots()
     }
-    fc <- memoise::cache_filesystem(paste0(experimentPath, "/.cache"))
-    fxs = lapply(list(QC,toPCA,getDims,toCluster,saveDataset,splitClusters),
-    memoise, cache = fc)
-
-    QC = fxs[[1]]
-    toPCA = fxs[[2]]
-    getDims = fxs[[3]]
-    toCluster = fxs[[4]]
-    saveDataset = fxs[[5]]
-    splitClusters = fxs[[6]]
     
     lapply(vc$input_paths, function(assayPath) {
         print(assayPath)
@@ -81,24 +71,24 @@ tenX2Seurat = function (
                 percent.mt.thresh = percent.mt,
                 minNFeature = minNFeature,
                 maxNFeature = maxNFeature)
-        pca = toPCA(qc, 
+        pca = toPCA(qc,
                     numTop = numTop,
                     nfeatures = nfeatures)
-        withDims = getDims(pca, 
+        withDims = getDims(pca,
                     getManually = getDimsManually,
                     dims = defaultDims)
-        clustered = toCluster(withDims, 
+        clustered = toCluster(withDims,
                     output_dir = output_dir,
                     clusterResolution = clusterResolution,
                     reductionTypes = reductionTypes,
                     min.pct = min.pct,
                     logfc.threshold = logfc.threshold)
-        fin = saveDataset(clustered, dataFilePath)
-        fin2 = splitClusters(clustered$dataset.markers,
+        saveDataset(clustered, dataFilePath)
+        splitClusters(clustered$dataset.markers,
                             output_dir,
                             name,
                             inp_p_val = cluster.pval)
-        saveRDS(clustered$report, paste0(dataFilePath, ".report.rds"))
+        saveRDS(clustered$report(), paste0(dataFilePath, ".report.rds"))
         
         plotNames = Filter(function(x) {
              str_starts(string = x, pattern = "plot::")
@@ -107,7 +97,7 @@ tenX2Seurat = function (
             mySavePlot(clustered$report()[[pn]], str_split(pn, "::")[[1]][2], paste(output_dir, name, sep = "/"))
         })
         rmarkdown::render(
-            system.file("report.rmd", package = 'midstream'),
+            system.file("assayReport.rmd", package = 'midstream'),
             output_dir = dataFilePath,
             output_file = paste0(name, ".report.html"),
             params = list("report" = clustered$report())

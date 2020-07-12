@@ -61,7 +61,7 @@ get10x <- function(dir_path, useFiltered = T) {
 loadFile = function(path) {
   name <- getFname(path)
   experimentName = getExperimentName(path)
-  if(path %>% endsWith("rds")) dataset <- readRDS(path)
+  if (path %>% endsWith("rds")) dataset <- readRDS(path)
   else dataset <- CreateSeuratObject(get10x(path))
   dataset$experimentName = experimentName
   dataset$datasetName = name

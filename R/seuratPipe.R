@@ -7,8 +7,7 @@ QC = function(
     percent.mt.thresh = 5,
     minNFeature=200,
     maxNFeature=2500,
-    numTop =10,
-    nfeatures = 2000
+    numTop =10
 ) {
     dataset = props$dataset
     report = props$report
@@ -134,7 +133,9 @@ toCluster <- function(
     reductionMapping = c("umap" = RunUMAP, "tsne" = RunTSNE)
     lapply(reductionTypes, function(type) {
         dataset <<- reductionMapping[[type]](dataset, dims = 1:dims)
-        report(paste0("plot::",type), DimPlot(dataset, reduction = type, label = T))
+        p = DimPlot(dataset, reduction = type, label = T)
+        p$layers[[2]]$aes_params$size = 10
+        report(paste0("plot::",type), p)
     })
     
     print("markers")
