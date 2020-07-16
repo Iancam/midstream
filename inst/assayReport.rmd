@@ -1,0 +1,76 @@
+---
+title: "Assay Report"
+output: html_document
+params:
+  report: ""
+---
+
+# QC
+
+between `r params$report$subsetMinNFeature$args[1]` and `r params$report$subsetMaxNFeature$args` features,
+with a maximum of `r params$report$subsetPercent.mt$args` percent mitochondrial dna.
+
+after applying the lower feature threshhold, we lose `r params$report$subsetMinNFeature$difference["cells"]` cells.
+after applying the upper feature threshhold, we lose `r params$report$subsetMaxNFeature$difference["cells"]` cells.
+after applying the mitochondrial threshhold, we lose `r params$report$subsetPercent.mt$difference["cells"]` cells.
+
+## Before Filtering
+```{r echo=FALSE}
+library(patchwork)
+library(ggplot2)
+params$report$`plot::before.mito.vln`
+# params$report$subsetMinNFeature
+# params$report$subsetMinNFeature$comparison
+
+# params$report$subsetMaxNFeature
+# params$report$subsetMaxNFeature$comparison
+# params$report$subsetMaxNFeature$difference
+# params$report$subsetPercent.mt
+# params$report$subsetPercent.mt$comparison
+# params$report$subsetPercent.mt$difference
+```
+
+
+## After Filtering
+lower feature threshhold
+```{r echo = F}
+```
+upper feature threshhold
+```{r echo = F}
+cbind(c("upperFeatureThresh" = params$report$subsetMaxNFeature$difference, "lowerFeatureThresh" =params$report$subsetMinNFeature$difference , "Mitochondrial Upper Bound" = params$report$subsetPercent.mt$difference))
+
+```
+mitochondrial threshhold
+```{r echo = F}
+
+```
+
+```{r echo = F}
+params$report$`plot::afterThresh.vln`
+```
+
+# PCA 
+
+## PCA
+```{r echo = F}
+params$report$`plot::dim.pca`
+```
+
+## Dimensions Loading, pc1, pc2
+```{r echo = F}
+params$report$`plot::dim.loadings`
+params$report$`plot::elbow`
+```
+
+# Clustering
+
+## counts
+```{r echo = F }
+params$report$`clusterCount`
+```
+```{r echo = F }
+p = params$report$`plot::umap`
+p$layers[[2]]$aes_params$size = 10
+print(p)
+params$report$`plot::tsne`
+```

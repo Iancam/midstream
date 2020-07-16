@@ -18,7 +18,7 @@ QC = function(
     percent.mt <- PercentageFeatureSet(dataset, pattern = "^[Mm][tT]-")
     AddMetaData(object=dataset, metadata = percent.mt, col.name = "percent.mt")
     dataset[["percent.mt"]] <- percent.mt
-    report("plot::before.mito.vln", g(VlnPlot(dataset, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)))
+    report("plot::before.mito.vln", g(VlnPlot(dataset, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, combine = T)))
     report("plot::mito.rnaCount.scatter", g(FeatureScatter(dataset, feature1 = "nCount_RNA", feature2 = "percent.mt")))
     report("plot::rnaFeature.rnaCount.scatter", g(FeatureScatter(dataset, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")))
 
@@ -49,7 +49,7 @@ QC = function(
             report
         )
     }
-    report("plot::afterThresh.vln", g(VlnPlot(dataset, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)))
+    report("plot::afterThresh.vln", g(VlnPlot(dataset, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, combine = T)))
     list("dataset" = dataset,  "report" = report)
 }
 

@@ -42,8 +42,10 @@ seurat2ClusterMap <- function(
         dir.create(output_dir,showWarnings= FALSE)
         files = list.files(seurat_dir, full.names = TRUE)
         markers <- Filter(function(x) endsWith(x, ".markers.csv") && !startsWith(basename(x), "comb"), files)
-        comb <- Filter(function(x) endsWith(x, ".rds") && startsWith(basename(x), "comb"), files)
-        rdsFiles <- Filter(function(x) endsWith(x, ".rds") && !startsWith(basename(x), "comb"), files)
+        comb <- Filter(function(x) endsWith(x, ".rds") && startsWith(basename(x), "comb") && !endsWith(x, ".report.rds"), files)
+        rdsFiles <- Filter(function(x) endsWith(x, ".rds") &&
+            !startsWith(basename(x), "comb") &&
+            !endsWith(x, ".report.rds"), files)
         obj.names = lapply(rdsFiles, function(path) gsub(comb_delim, sub_delim, getFname(path)))
         single_obj_list <- lapply(rdsFiles, readRDS)
         single_obj_list <- setNames(single_obj_list, obj.names)
