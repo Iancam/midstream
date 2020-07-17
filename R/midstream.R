@@ -1,7 +1,7 @@
 #' @import magrittr
 #' @import Seurat
 #' @import R.devices
-#' @import memoise
+#' @import drake
 #' @param experimentPath path to a dir containing input_dir (defaults to input), will contain output directories
 #' @param output_dir = "seuratOutput":
 #' @param input_dir = "input": directory name in experimentPath containing 10x output, should look like "outs/filtered_gene_bc_matrices/mm10"
@@ -39,7 +39,6 @@ tenX2Seurat = function (
     logfc.threshold = 0.25,
     cluster.pval = 0.05
 ) {
-    sink()
     input_dir  <- paste(experimentPath, input_dir, sep = "/")
     if(!file.exists(input_dir)) {
         warning("input dir missing from path: ", experimentPath, "\n",
@@ -61,47 +60,50 @@ tenX2Seurat = function (
     dumpFixer = function(fn) {
         function(...) fn(...) %>% dumpPrintPlots()
     }
-    
-    lapply(vc$input_paths, function(assayPath) {
-        print(assayPath)
-        input = list("dataset" = loadFile(assayPath), "report" = reportFactory())
-        name = getNameFromSeurat(input$dataset)
-        dataFilePath <- paste(output_dir, name, sep = "/")
-        qc = QC(input,
+    pipe = drake_plan(
+        input = target(list("dataset" = loadFile(file_in(assayPath)),
+                        "report" = reportFactory()),
+                        transform = map(assayPath = !!vc$input_paths)),
+        name = target(getNameFromSeurat(input$dataset), transform = map(input)),
+        dataFilePath = target(paste(output_dir, name, sep = "/"), transform = map(name)),
+        qc = target(QC(input,
                 percent.mt.thresh = percent.mt,
                 minNFeature = minNFeature,
-                maxNFeature = maxNFeature)
-        pca = toPCA(qc,
+                maxNFeature = maxNFeature), transform=map(input)),
+        pca = target(toPCA(qc,
                     numTop = numTop,
-                    nfeatures = nfeatures)
-        withDims = getDims(pca,
+                    nfeatures = nfeatures), transform=map(qc)),
+        withDims = target(getDims(pca,
                     getManually = getDimsManually,
-                    dims = defaultDims)
-        clustered = toCluster(withDims,
+                    dims = defaultDims), transform=map(pca)),
+        clustered = target(toCluster(withDims,
                     output_dir = output_dir,
                     clusterResolution = clusterResolution,
                     reductionTypes = reductionTypes,
                     min.pct = min.pct,
-                    logfc.threshold = logfc.threshold)
-        saveDataset(clustered, dataFilePath)
-        splitClusters(clustered$dataset.markers,
+                    logfc.threshold = logfc.threshold), transform=map(withDims)),
+        savedRds = target(saveDataset(clustered, dataFilePath), transform=map(clustered)),
+        savedClusters = target(splitClusters(clustered$dataset.markers,
                             output_dir,
                             name,
-                            inp_p_val = cluster.pval)
-        saveRDS(clustered$report(), paste0(dataFilePath, ".report.rds"))
-        
-        plotNames = Filter(function(x) {
+                            inp_p_val = cluster.pval), transform=map(clustered)),
+        savedReport = target(saveRDS(clustered$report(),
+                         paste0(dataFilePath, ".report.rds")),
+                        transform=map(clustered)),
+        plotNames = target(Filter(function(x) {
              str_starts(string = x, pattern = "plot::")
-             }, names(clustered$report()))
-        lapply(plotNames, function(pn) {
+             }, names(clustered$report())), transform=map(clustered)),
+        savedPlots = target(lapply(plotNames, function(pn) {
             mySavePlot(clustered$report()[[pn]], str_split(pn, "::")[[1]][2], paste(output_dir, name, sep = "/"))
-        })
-        rmarkdown::render(
+        }), transform = map(plotNames)),
+        report = target(rmarkdown::render(
             system.file("assayReport.rmd", package = 'midstream'),
             output_dir = dataFilePath,
             output_file = paste0(name, ".report.html"),
             params = list("report" = clustered$report())
-        )
-    })
+            ), transform=map(clustered))
+    )
+    # vis_drake_graph(pipe, file = "~/desktop/drake.html")
+    make(pipe)
 
 }

@@ -1,5 +1,5 @@
 test_that("Pipe Runs Without Errors", {
-  tenX2Seurat("data/im", percent.mt = 3, minNFeature = 2000)
+  expect_error(tenX2Seurat("data/im", percent.mt = 3, minNFeature = 2000), NA)
 })
 
 test_that("QCFiles exist", {

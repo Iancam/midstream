@@ -23,7 +23,8 @@ Imports:
     purrr,
     stringr,
     R.devices,
-    memoise
+    memoise,
+    drake
 Remotes: 
     Iancam/clustermap
 Suggests: 
