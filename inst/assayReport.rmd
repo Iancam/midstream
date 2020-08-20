@@ -6,19 +6,23 @@ params:
 ---
 
 # QC
-
-between `r params$report$subsetMinNFeature$args[1]` and `r params$report$subsetMaxNFeature$args` features,
+between `r params$report$subsetMinNFeature$args` and `r params$report$subsetMaxNFeature$args` features,
 with a maximum of `r params$report$subsetPercent.mt$args` percent mitochondrial dna.
+We start with `r #params$report$start$samples_left`
 
-after applying the lower feature threshhold, we lose `r params$report$subsetMinNFeature$difference["cells"]` cells.
-after applying the upper feature threshhold, we lose `r params$report$subsetMaxNFeature$difference["cells"]` cells.
-after applying the mitochondrial threshhold, we lose `r params$report$subsetPercent.mt$difference["cells"]` cells.
+
+```{r echo=FALSE}
+params$report$subsetMinNFeature
+```
+after applying the lower feature threshhold, we lose `r params$report$subsetMinNFeature$cell_loss` cells.
+after applying the upper feature threshhold, we lose `r params$report$subsetMaxNFeature$cell_loss` cells.
+after applying the mitochondrial threshhold, we lose `r params$report$subsetPercent.mt$cell_loss` cells.
 
 ## Before Filtering
 ```{r echo=FALSE}
-library(patchwork)
-library(ggplot2)
-params$report$`plot::before.mito.vln`
+# library(patchwork)
+# library(ggplot2)
+# params$report$`plot::before.mito.vln`
 # params$report$subsetMinNFeature
 # params$report$subsetMinNFeature$comparison
 
@@ -32,21 +36,13 @@ params$report$`plot::before.mito.vln`
 
 
 ## After Filtering
-lower feature threshhold
-```{r echo = F}
-```
-upper feature threshhold
-```{r echo = F}
-cbind(c("upperFeatureThresh" = params$report$subsetMaxNFeature$difference, "lowerFeatureThresh" =params$report$subsetMinNFeature$difference , "Mitochondrial Upper Bound" = params$report$subsetPercent.mt$difference))
-
-```
-mitochondrial threshhold
-```{r echo = F}
-
-```
-
 ```{r echo = F}
 params$report$`plot::afterThresh.vln`
+```
+
+we end with
+```{r echo=F}
+params$report$subsetPercent.mt
 ```
 
 # PCA 
@@ -65,12 +61,11 @@ params$report$`plot::elbow`
 # Clustering
 
 ## counts
-```{r echo = F }
-params$report$`clusterCount`
+```{r echo = F, results="asis"}
+knitr::kable(params$report$`clusterCount`)
 ```
 ```{r echo = F }
 p = params$report$`plot::umap`
 p$layers[[2]]$aes_params$size = 10
-print(p)
 params$report$`plot::tsne`
 ```

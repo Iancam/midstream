@@ -24,7 +24,8 @@ Imports:
     stringr,
     R.devices,
     memoise,
-    drake
+    drake,
+    future
 Remotes: 
     Iancam/clustermap
 Suggests: 

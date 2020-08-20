@@ -21,7 +21,7 @@ QC = function(
     report("plot::before.mito.vln", g(VlnPlot(dataset, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, combine = T)))
     report("plot::mito.rnaCount.scatter", g(FeatureScatter(dataset, feature1 = "nCount_RNA", feature2 = "percent.mt")))
     report("plot::rnaFeature.rnaCount.scatter", g(FeatureScatter(dataset, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")))
-
+    reportChanges(dataset, function() dataset, "start", "n/a", report)
     if (!is.null(minNFeature)) {
         dataset = reportChanges(
             dataset,
@@ -49,7 +49,7 @@ QC = function(
             report
         )
     }
-    report("plot::afterThresh.vln", g(VlnPlot(dataset, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, combine = T)))
+    report("plot::after.mito.vln", g(VlnPlot(dataset, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, combine = T)))
     list("dataset" = dataset,  "report" = report)
 }
 
@@ -83,7 +83,7 @@ toPCA <- function(
     dataset <- ScaleData(dataset)
     
     print("PCA")
-    dataset <- RunPCA(dataset, features = VariableFeatures(object = dataset, nfeatures = nfeatures))
+    dataset <- RunPCA(dataset, features = VariableFeatures(dataset))
     report("plot::dim.pca", g(DimPlot(dataset, reduction = "pca")))
     report("plot::dim.loadings", g(VizDimLoadings(dataset, dims = 1:2, reduction = "pca")))
     if(plotHeatMap) report("dim.heatmap", g(DimHeatmap(dataset, dims = 1:15, cells = 500, balanced = TRUE)))

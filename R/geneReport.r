@@ -10,8 +10,8 @@ splitToLen = function(list,len) {
 #' @param experimentPath the path to the experiment containing the file
 geneReport = function(
     geneInfo,
-    filename,
-    experimentPath,
+    filename= "dataset",
+    experimentPath = "",
     output_dir = "geneReportOutput",
     dataset = NULL,
     plots = c("dot")
@@ -35,8 +35,8 @@ geneReport = function(
         warning("no plot of name ", plotType, "\n", "try one of: ", names(plotMap))
         return()
     }
-    length = foundPlot[1]
-    plotter = foundPlot[2]
+    length = foundPlot[[1]]
+    plotter = foundPlot[[2]]
     plotted = lapply(splitToLen(features, length), plotter)
     lapply(seq_along(plotted), function(plotIndex) {
       lapply(c("pdf", "png"), function(fType){

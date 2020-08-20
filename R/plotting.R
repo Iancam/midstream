@@ -1,27 +1,26 @@
 ##### PLOTTING 
 #' @import Seurat
-reportChanges = function(oldDataset, fx, functionName, args, report){
+reportChanges = function(oldDataset, fx, filterName, args, report) {
     newDataset = fx()
-    datasetReports = lapply(list(oldDataset, newDataset), function(dataset) {
-        c("features" = nrow(dataset),
-        "cells" = ncol(dataset),
-        "variable features" = length(VariableFeatures(dataset)))
-    })
-    after = datasetReports[[2]]
-    before = datasetReports[[1]]
-    diff = after - before
-
-    changes = list()
-    changes$args = args
-    changes$comparison = cbind(before, after)
-    changes$difference = diff
-    report(functionName, changes)
+    after = ncol(newDataset)
+    diff = after - ncol(oldDataset)
+    report(filterName, list(
+        "filter_name" = filterName,
+        "args" = paste(args, collapse=','),
+        "cell_loss" = diff,
+        "samples_left" = after
+    ))
     newDataset
 }
 
 g = function(plot){
     plot
 }
+
+# reporting (props$report)
+# scrubReport(fx)
+# injectReport(fx)
+# report(qc)
 
 reportFactory = function() {
     report = list()

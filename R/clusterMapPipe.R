@@ -50,8 +50,7 @@ seurat2ClusterMap <- function(
         single_obj_list <- lapply(rdsFiles, readRDS)
         single_obj_list <- setNames(single_obj_list, obj.names)
         markers = setNames(markers, obj.names)
-        comb = readRDS(comb)  
-        
+        comb = readRDS(comb)
         results <- cluster_map(
             markers,
             edge_cutoff = 0.1,
@@ -64,5 +63,15 @@ seurat2ClusterMap <- function(
         figures <- Filter(function(x) endsWith(x, "png") || endsWith(x, "pdf"), list.files())
         print(figures)
         print(output_dir)
-        lapply(figures, function (file) file.rename(file, paste(output_dir, "figures", file, sep="/")))
+        figurePaths <- lapply(figures, function (file){
+            figName = paste(output_dir, "figures", file, sep="/");
+            file.rename(file, figName)
+            figName
+        })
+        rmarkdown::render(system.file("experimentReport.rmd", package = 'midstream'), 
+                output_dir = output_dir,
+                output_file =  "experiment.report.html", 
+                params = list("clustermapDir" = output_dir,
+                              "seuratDir" = seurat_dir)
+            )    
 }
