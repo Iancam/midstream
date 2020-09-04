@@ -20,7 +20,7 @@ geneReport = function(
   name = geneInfo[[1]]
   features = geneInfo[[2]]
   dir = paste(experimentPath, output_dir, getFname(filename), sep = "/")
-  dir.create(dir, recursive= T, showWarnings = F)
+  dir.create(dir, recursive = T, showWarnings = F)
 
   plotMap = list(
     "ridge"   = list(9, function(features) RidgePlot(dataset, features = features, ncol = 3)),
