@@ -1,5 +1,10 @@
 #' @import Seurat
 #' @import dplyr
+#' @import org.Mm.eg.db
+#' @import fgsea
+#' @import reactome.db
+#' @import presto
+#' @import annotations_db
 #' @importFrom utils head tail
 #' 
 QC = function(
@@ -116,7 +121,8 @@ toCluster <- function(
     clusterResolution= 0.5,
     reductionTypes= c("umap"),
     min.pct = 0.25,
-    logfc.threshold = 0.25
+    logfc.threshold = 0.25,
+    useFastWilcoxon = T
 ) {
     dataset = input$dataset
     dims = input$dims
@@ -128,8 +134,7 @@ toCluster <- function(
     dataset <- FindClusters(dataset, resolution = clusterResolution)
     
     report("clusterCount", table(Idents(dataset)))
-
-
+    
     reductionMapping = c("umap" = RunUMAP, "tsne" = RunTSNE)
     lapply(reductionTypes, function(type) {
         dataset <<- reductionMapping[[type]](dataset, dims = 1:dims)
@@ -139,10 +144,17 @@ toCluster <- function(
     })
     
     print("markers")
-    dataset.markers <- FindAllMarkers(
+  dataset.markers <- FindAllMarkers(
         dataset,
         min.pct = min.pct,
         logfc.threshold = logfc.threshold
+    )
+
+    dataset.markers["ensembleID"] = mapIds(
+        org.Mm.eg.db,
+        keys = dataset.markers[['gene']],
+        column = "ENSEMBL",
+        keytype = "SYMBOL"
     )
     
     list(
