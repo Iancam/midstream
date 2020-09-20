@@ -1,10 +1,10 @@
 #' @import Seurat
 #' @import dplyr
 #' @import org.Mm.eg.db
-#' @import fgsea
-#' @import reactome.db
-#' @import presto
-#' @import annotations_db
+# @import fgsea
+# @import reactome.db
+# @import presto
+#' @import AnnotationDbi
 #' @importFrom utils head tail
 #' 
 QC = function(

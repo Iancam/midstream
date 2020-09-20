@@ -25,7 +25,9 @@ Imports:
     R.devices,
     memoise,
     drake,
-    future
+    future,
+    AnnotationDbi,
+    org.Mm.eg.db
 Remotes: 
     Iancam/clustermap
 Suggests: 
