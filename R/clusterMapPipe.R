@@ -1,6 +1,7 @@
 
 #' @import stringr
 #' @import Seurat
+#' @import ggplot2
 #' @import ClusterMap
 #' @importFrom stats setNames
 #' @export

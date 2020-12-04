@@ -2,3 +2,4 @@ tests/testthat/data/
 .DS_Store
 .drake
 TODO:
+data
