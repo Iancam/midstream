@@ -14,7 +14,7 @@ A "one-click" solution for biologists doing single cell RNA seq clustering analy
 
 - create a folder for your experiment. For the example, we'll call it experimentFolder. The name of the folder will be used in the project, so name it thoughtfully.
 
-- Insie of the experiment folder, create a folder called input.
+- Inside of the experiment folder, create a folder called input.
 
 - Copy the relevant 10X directories into that folder.
 
