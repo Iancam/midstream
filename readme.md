@@ -82,11 +82,9 @@ Imagine typing all of that into the console every time you want to run an analys
 - multiple filtering parameters that you'd like to try
 - people asking for reports every two weeks.
 
-You'd spend a lot of time choosing names and locations for those files, and it get's hard to tell which analysis produced which results.
-
+You'd spend a lot of time choosing names and locations for those files, and it gets hard to tell which analysis produced which results.
 # Future Directions
 
 - command line tool
-- use a database model of inputs, rather than an inputs folder
-- include functional analyses
-- include cell trajectory analyses
+- include functional analyses, IE GSEA, GAGE
+- include cell trajectory analyses, IE SCVelo
