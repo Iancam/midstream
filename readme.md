@@ -30,15 +30,23 @@ devtools::install_github("iancam/midstream")
 
 - Rename **those** directories to reflect their experimental names, ie. control, day 1, etc.
 
-- create an analysis.r file in the experiment folder
+- create an analysis.r file in the experiment folder.
   Your analysis might look something like this.
+
+```
+├── experiment_name
+│   ├── input
+│   │   ├── control
+│   |   ├── day_1
+│   |   ├── day_5
+│   |   ├── day_30
+|   |–– analysis.r
+```
 
 ```r
 library(midstream)
 # run the standard seurat pipeline on each of the files in input
 # and on the combination of all the files together
-
-# Convert 10X Genomics data to Seurat objects
 tenX2Seurat("./")
 
 # collect your clusters together and compare them
@@ -51,9 +59,9 @@ geneReport("./", name = "interestingGenes", geneList = c("caspr", "alg1", "pepp2
 
 - To run your analysis, open terminal and cd to your experiment directory, then run `rscript analysis.r`
 
-## But Seurat is Great!
+## Comparison to Seurat Workflow.
 
-It really is. But if you're just following the vignettes, you might end up doing a lot of repetitive work without realizing it.
+Seurat greatly simplifies single cell RNA sequencing already, but if you're just following the vignettes, you might end up doing a lot of repetitive work without realizing it.
 
 A simple Seurat run through (with plots) looks like this:
 
@@ -92,9 +100,9 @@ markers = FindAllMarkers(
 clusterCount = table(Idents(dataset))
 ```
 
-That's at least 18 steps per assay, not to mention managing the plot and summary statistic output. And in the analyses run at our lab, each experiment had 4-5 assays. Imagine typing all of that into the console every time you want to run an analysis. This gets overwhelming when you've got:
+That's at least 18 steps per assay, not to mention managing the plot and summary statistic output. Imagine typing all of that into the console every time you want to run an analysis. This gets overwhelming when you've got:
 
-- multiple assays,
+- multiple assays (our lab had 4-5 per experiment),
 - multiple filtering parameters that you'd like to try
 - people asking for reports every two weeks.
 
